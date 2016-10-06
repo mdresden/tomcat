@@ -150,3 +150,4 @@ action :install do
     to new_resource.install_path
   end
 end
+
