@@ -109,7 +109,7 @@ action :install do
 
   user new_resource.tomcat_user do
     uid tomcat_user_uid
-    gid tomcat_group_gid
+    gid tomcat_group
     shell '/bin/false'
     system true
     action :create
