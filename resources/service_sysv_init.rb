@@ -42,7 +42,7 @@ end
 action :restart do
   service "tomcat_#{new_resource.instance_name}" do
     provider platform_sysv_init_class
-    supports status: true
+    supports status: true, restart: true
     action :restart
   end
 end

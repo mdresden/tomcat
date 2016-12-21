@@ -4,13 +4,15 @@ property :install_path, String, default: lazy { |r| "/opt/tomcat_#{r.instance_na
 property :tarball_base_path, String, default: 'http://archive.apache.org/dist/tomcat/'
 property :checksum_base_path, String, default: 'http://archive.apache.org/dist/tomcat/'
 property :sha1_base_path, String # this is the legacy name for this attribute
-property :exclude_docs, [true, false], default: true
-property :exclude_examples, [true, false], default: true
-property :exclude_manager, [true, false], default: false
-property :exclude_hostmanager, [true, false], default: false
+property :exclude_docs, kind_of: [TrueClass, FalseClass], default: true
+property :exclude_examples, kind_of: [TrueClass, FalseClass], default: true
+property :exclude_manager, kind_of: [TrueClass, FalseClass], default: false
+property :exclude_hostmanager, kind_of: [TrueClass, FalseClass], default: false
 property :tarball_uri, String
-property :tomcat_user, String, default: lazy { |r| "tomcat_#{r.instance_name}" }
-property :tomcat_group, String, default: lazy { |r| "tomcat_#{r.instance_name}" }
+property :tomcat_user, kind_of: String, default: lazy { |r| "tomcat_#{r.instance_name}" }
+property :tomcat_group, kind_of: String, default: lazy { |r| "tomcat_#{r.instance_name}" }
+property :tomcat_user_uid, kind_of: String, default: '4970'
+property :tomcat_group_gid, kind_of: String, default: '4970'
 
 action_class do
   # break apart the version string to find the major version
@@ -100,12 +102,14 @@ action :install do
   package 'tar'
 
   group new_resource.tomcat_group do
+    gid tomcat_group_gid
     action :create
     append true
   end
 
   user new_resource.tomcat_user do
-    gid new_resource.tomcat_group
+    uid tomcat_user_uid
+    gid tomcat_group
     shell '/bin/false'
     system true
     action :create
@@ -135,7 +139,10 @@ action :install do
   execute "chown install dir as tomcat_#{new_resource.instance_name}" do
     command "chown -R #{new_resource.tomcat_user}:#{new_resource.tomcat_group} #{new_resource.install_path}"
     action :run
-    not_if { Etc.getpwuid(::File.stat("#{new_resource.install_path}/LICENSE").uid).name == new_resource.tomcat_user }
+    not_if do
+      uid = ::File.stat("#{new_resource.install_path}/LICENSE").uid
+      name = Etc.getpwuid(uid).name && name == new_resource.tomcat_user
+    end
   end
 
   # create a link that points to the latest version of the instance
